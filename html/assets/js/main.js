@@ -1,6 +1,7 @@
 
 let wsocket;
 let chartDaily;
+let calculationId;
 
 function websocketSend(msg) {
     console.debug("websocket sending", msg)
@@ -47,6 +48,11 @@ function onKpiWeeklyReceived(data) {
     chartDaily.series[1].addPoint([data.time * 1000, data.value]);
 }
 
+function cleanChart() {
+    chartDaily.series[0].setData([]);
+    chartDaily.series[1].setData([]);
+}
+
 function websocketConnect() {
 
     if (wsocket && (wsocket.readyState === 0 || wsocket.readyState === 1)) {
@@ -78,6 +84,10 @@ function websocketConnect() {
             console.log("websocket message received ", msg.data);
 
             let data = JSON.parse(msg.data);
+            if (data.calc_id && data.calc_id !== calculationId) {
+                cleanChart();
+                calculationId = data.calc_id;
+            }
             if (data.sim_time) {
                 setSimTimeField(data.sim_time);
             }
@@ -116,8 +126,7 @@ function websocketConnect() {
 }
 
 $("#button-start").click(function() {
-    chartDaily.series[0].setData([]);
-    chartDaily.series[1].setData([]);
+    cleanChart();
     websocketSend(JSON.stringify({
         command: {
             type: "start"

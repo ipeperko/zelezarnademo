@@ -77,6 +77,7 @@ private:
     TimePoint tp_kpi_last_; // time of the last kpi calculation
     TimePoint tp_kpi_next_; // time of the next kpi calculation
 
+    unsigned calculation_id_ {0};
     std::map<std::string, OpearationStatistics> operation_statistics_;
 };
 

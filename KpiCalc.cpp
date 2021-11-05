@@ -17,30 +17,16 @@ Ty lin_interpolate(Tx x, Tx x1, Tx x2, Ty y1, Ty y2)
 
 } // namespace
 
-void KpiCalc::calculateDaily(TimePoint tp, dbm::session& db)
+double KpiCalc::calculateDaily(TimePoint tp, dbm::session& db)
 {
-    auto kpi = calculate(db, tp - 24h, tp);
-
-    WebsocketDataBus::instance().messageToWebclients(nlohmann::json {
-            {"kpi_daily", {
-                    { "time", ClockType::to_time_t(tp) },
-                    { "value", kpi }
-            }
-            }});
+    return calculate(db, tp - 24h, tp);
 }
 
-void KpiCalc::calculateWeekly(TimePoint tp, dbm::session& db)
+double KpiCalc::calculateWeekly(TimePoint tp, dbm::session& db)
 {
     log(debug) << "Calculating weekly - time point " << TimeReference::timeStamp(tp);
 
-    double kpi_sum = calculate(db, tp - 7 * 24h, tp);
-
-    WebsocketDataBus::instance().messageToWebclients(nlohmann::json {
-            {"kpi_weekly", {
-                    { "time", ClockType::to_time_t(tp) },
-                    { "value", kpi_sum }
-            }
-            }});
+    return calculate(db, tp - 7 * 24h, tp);
 }
 
 double KpiCalc::calculate(dbm::session& db, TimePoint from, TimePoint to)
@@ -101,7 +87,7 @@ double KpiCalc::calculate(dbm::session& db, TimePoint from, TimePoint to)
                 E = E2 - E1;
         }
         else {
-            // all other intervals
+            // all the other intervals
             if (E2 < E1)
                 E = E2;
             else

@@ -55,7 +55,6 @@ void Application::cleanDatabase()
     auto conn = pool_.acquire();
     conn.get().query("DELETE FROM energy_data");
     conn.get().query("DELETE FROM production_data");
-    conn.release();
 }
 
 void Application::acceptMessage(std::string&& msg)
@@ -78,6 +77,9 @@ void Application::acceptMessage(std::string&& msg)
                 catch (std::exception&) {
                     log(error) << "Clean database failed";
                 }
+
+                static unsigned calc_id = 0;
+                calculation_id_ = calc_id++;
                 timeref.start(tp_initial_);
             }
             else if (type == "stop") {
@@ -168,24 +170,17 @@ void Application::onTimePing(TimePoint tp)
 {
     std::thread([this, tp] {
 
-        WebsocketDataBus::instance().messageToWebclients(nlohmann::json{{"sim_time", ClockType::to_time_t(tp)}});
+        WebsocketDataBus::instance().messageToWebclients(nlohmann::json{
+            {"sim_time", ClockType::to_time_t(tp)},
+            {"calc_id", calculation_id_}
+        });
 
         auto thr1 = std::thread([this, tp] {
-            try {
-                daq_energy_->pingSlot(tp);
-            }
-            catch(std::exception& e) {
-                log(error) << "daq energy pingSlot exception : " << e.what();
-            }
+            daq_energy_->pingSlot(tp);
         });
 
         auto thr2 = std::thread([this, tp] {
-            try {
-                daq_production_->pingSlot(tp);
-            }
-            catch(std::exception& e) {
-                log(error) << "daq production pingSlot exception : " << e.what();
-            }
+            daq_production_->pingSlot(tp);
         });
 
         thr1.join();
@@ -200,7 +195,15 @@ void Application::onTimePing(TimePoint tp)
             auto db = makeDbSession(); // session not from pool
 
             try {
-                KpiCalc().calculateDaily(tp_kpi_next_, *db.get());
+                double kpi = KpiCalc().calculateDaily(tp_kpi_next_, *db);
+
+                WebsocketDataBus::instance().messageToWebclients(nlohmann::json {
+                        {"kpi_daily", {
+                                { "time", ClockType::to_time_t(tp) },
+                                { "value", kpi },
+                                { "calc_id", calculation_id_ }
+                        }
+                        }});
             }
             catch (std::exception& e) {
                 log(error) << "kpi calculate daily failed : " << e.what();
@@ -213,7 +216,15 @@ void Application::onTimePing(TimePoint tp)
             if (timeinfo.tm_wday == 0) {
                 // every sunday
                 try {
-                    KpiCalc().calculateWeekly(tp_kpi_next_, *db.get());
+                    double kpi = KpiCalc().calculateWeekly(tp_kpi_next_, *db);
+
+                    WebsocketDataBus::instance().messageToWebclients(nlohmann::json {
+                            {"kpi_weekly", {
+                                    { "time", ClockType::to_time_t(tp) },
+                                    { "value", kpi },
+                                    { "calc_id", calculation_id_ }
+                            }
+                            }});
                 }
                 catch (std::exception& e) {
                     log(error) << "kpi calculate weekly failed : " << e.what();

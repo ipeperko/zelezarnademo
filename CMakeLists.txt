@@ -42,6 +42,8 @@ set (SOURCES
 
 find_package(dbm 0.0.31 REQUIRED)
 
+find_package (Boost 1.71 REQUIRED COMPONENTS system program_options)
+
 add_executable(zelezarna ${SOURCES})
 
 target_link_libraries(zelezarna pthread

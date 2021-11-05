@@ -15,9 +15,9 @@ public:
      : Object("KpiCalc")
     {}
 
-    void calculateDaily(TimePoint tp, dbm::session& db);
+    double calculateDaily(TimePoint tp, dbm::session& db);
 
-    void calculateWeekly(TimePoint tp, dbm::session& db);
+    double calculateWeekly(TimePoint tp, dbm::session& db);
 
 private:
 

@@ -60,18 +60,24 @@ Daq::Daq(std::string name)
 
 void Daq::pingSlot(TimePoint tp)
 {
-    std::vector<Data> pts;
+    try {
+        std::vector<Data> pts;
 
-    log(trace) << "pingSlot " << this;
+        log(trace) << "pingSlot " << this;
 
-    while (tp >= iterator_->tp && iterator_ != data_.end()) {
-        log(trace) << "Trigger sim time : " << TimeReference::timeStamp(tp) << " data time : " << TimeReference::timeStamp(iterator_->tp);
-        pts.push_back(*iterator_);
-        ++iterator_;
+        while (tp >= iterator_->tp && iterator_ != data_.end()) {
+            log(trace) << "Trigger sim time : " << TimeReference::timeStamp(tp) << " data time : "
+                       << TimeReference::timeStamp(iterator_->tp);
+            pts.push_back(*iterator_);
+            ++iterator_;
+        }
+
+        if (!pts.empty())
+            insertData(pts);
     }
-
-    if (!pts.empty())
-        insertData(pts);
+    catch (std::exception& e) {
+        log(error) << "pingSlot exception : " << e.what();
+    }
 }
 
 void Daq::resetIterator(TimePoint tp)
@@ -182,14 +188,15 @@ void Daq::insertData(std::vector<Data> const& pts) noexcept
             lg << "inserting       " << pts.size() << " pts ";
             if (!pts.empty()) {
                 lg << TimeReference::timeStamp(pts.front().tp) << " - "
-                    << TimeReference::timeStamp(pts.back().tp) << " session " << std::hex << &conn.get()
+                    << TimeReference::timeStamp(pts.back().tp) << " ";
+                lg << "session " << std::hex << &conn.get()
                     << " num stmt handles " << std::dec << conn.get().prepared_statement_handles().size();
             }
         }
 
-        dbm::prepared_stmt stmt(insertStatement().data());;
-        stmt.push(dbm::local<time_t>());
-        stmt.push(dbm::local<double>());
+        dbm::prepared_stmt stmt(insertStatement().data(),
+                                dbm::local<time_t>(),
+                                dbm::local<double>());
         unsigned long count = 0;
         unsigned long count_failed = 0;
 
@@ -198,7 +205,7 @@ void Daq::insertData(std::vector<Data> const& pts) noexcept
             stmt.param(1)->set(it.val);
             stmt.param(1)->set_null(it.is_null);
             try {
-                query_helper(stmt, conn.get(), stat);
+                query_helper(stmt, *conn, stat);
                 count++;
             } catch (std::exception &e) {
                 count_failed++;
