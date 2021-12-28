@@ -31,11 +31,19 @@ void Application::init()
 
     auto minmax = std::minmax(daq_energy_->data().begin()->tp, daq_production_->data().begin()->tp);
 
-    tp_initial_ = minmax.second ; //+ 24 * 24 * 3600s;
+    tp_initial_ = minmax.second + 14 * 24h;
     resetIterators();
 
+    dbm::utils::debug_logger::writer = [](auto level, auto&& msg) {
+        if (level == dbm::utils::debug_logger::level::Error) {
+            Log("dbm", error) << msg;
+        }
+        else {
+            Log("dbm", debug) << msg;
+        }
+    };
+
     pool_.set_max_connections(10);
-    pool_.enable_debug(true);
     pool_.set_session_initializer([]() {
         return Application::instance().makeDbSession();
     });
@@ -135,16 +143,27 @@ std::string Application::statusMessage() const
 }
 
 void Application::sendStatisticsMessage() const
-{
-    nlohmann::json json;
+{    
     auto statistics = operation_statistics_; // make a copy
     auto pool_stat = pool_.stat();
 
+    nlohmann::json profile = nlohmann::json::array();
+    for (auto const& it : pool_stat.acquire_stat) {
+        profile.push_back({ std::to_string(it.first) + "ms", it.second });
+    }
+
+    nlohmann::json json;
     json["operation_statistics"]["pool"] = {
             { "n_conn", pool_stat.n_conn },
             { "n_active_conn", pool_stat.n_active_conn },
             { "n_idle_conn", pool_stat.n_idle_conn },
-            { "n_heartbeats", pool_stat.n_heartbeats }
+            { "n_heartbeats", pool_stat.n_heartbeats },
+            { "n_acquired", pool_stat.n_acquired },
+            { "n_acquiring", pool_stat.n_acquiring },
+            { "n_acquiring_max", pool_stat.n_acquiring_max },
+            { "n_max_conn", pool_stat.n_max_conn },
+            { "n_timeouts", pool_stat.n_timeouts },
+            { "acquire_profile", std::move(profile)}
     };
 
     json["operation_statistics"]["daq"] = nlohmann::json::array();
@@ -273,7 +292,6 @@ void Application::resetStatistics()
 std::shared_ptr<dbm::session> Application::makeDbSession() const
 {
     auto conn = std::make_shared<dbm::mysql_session>();
-    conn->init(options.db_hostname, options.db_username, options.db_password, options.db_port, "zelezarna");
-    conn->open();
+    conn->connect(options.db_hostname, options.db_username, options.db_password, "zelezarna", options.db_port);
     return conn;
 }
