@@ -17,6 +17,16 @@ class Application : public Object
 private:
     Application();
 public:
+    struct MakePoolSession
+    {
+        std::shared_ptr<dbm::session> operator()()
+        {
+            return Application::instance().makeDbSession();
+        }
+    };
+
+    using Pool = dbm::pool<MakePoolSession>;
+
     Application(Application const&) = delete;
 
     Application(Application&&) = delete;
@@ -70,7 +80,7 @@ private:
     std::unique_ptr<Daq> daq_production_;
     std::unique_ptr<Daq> daq_energy_;
 
-    dbm::pool pool_;
+    Pool pool_;
 
     std::shared_mutex db_mtx_;
     TimePoint tp_initial_;

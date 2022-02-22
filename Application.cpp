@@ -44,9 +44,6 @@ void Application::init()
     };
 
     pool_.set_max_connections(10);
-    pool_.set_session_initializer([]() {
-        return Application::instance().makeDbSession();
-    });
 
     try {
         cleanDatabase();
