@@ -286,7 +286,7 @@ void Application::resetStatistics()
     }
 }
 
-std::shared_ptr<dbm::session> Application::makeDbSession() const
+std::shared_ptr<dbm::mysql_session> Application::makeDbSession() const
 {
     auto conn = std::make_shared<dbm::mysql_session>();
     conn->connect(options.db_hostname, options.db_username, options.db_password, "zelezarna", options.db_port);

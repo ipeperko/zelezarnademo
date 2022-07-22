@@ -17,19 +17,19 @@ Ty lin_interpolate(Tx x, Tx x1, Tx x2, Ty y1, Ty y2)
 
 } // namespace
 
-double KpiCalc::calculateDaily(TimePoint tp, dbm::session& db)
+double KpiCalc::calculateDaily(TimePoint tp, dbm::mysql_session& db)
 {
     return calculate(db, tp - 24h, tp);
 }
 
-double KpiCalc::calculateWeekly(TimePoint tp, dbm::session& db)
+double KpiCalc::calculateWeekly(TimePoint tp, dbm::mysql_session& db)
 {
     log(debug) << "Calculating weekly - time point " << TimeReference::timeStamp(tp);
 
     return calculate(db, tp - 7 * 24h, tp);
 }
 
-double KpiCalc::calculate(dbm::session& db, TimePoint from, TimePoint to)
+double KpiCalc::calculate(dbm::mysql_session& db, TimePoint from, TimePoint to)
 {
     time_t tfrom = ClockType::to_time_t(from);
     time_t tto = ClockType::to_time_t(to);

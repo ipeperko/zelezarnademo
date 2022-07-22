@@ -6,6 +6,7 @@
 #include "TimeReference.h"
 
 #include <dbm/dbm.hpp>
+#include <dbm/drivers/mysql/mysql_session.hpp>
 
 #include <map>
 #include <mutex>
@@ -19,13 +20,13 @@ private:
 public:
     struct MakePoolSession
     {
-        std::shared_ptr<dbm::session> operator()()
+        std::shared_ptr<dbm::mysql_session> operator()()
         {
             return Application::instance().makeDbSession();
         }
     };
 
-    using Pool = dbm::pool<MakePoolSession>;
+    using Pool = dbm::pool<dbm::mysql_session, MakePoolSession>;
 
     Application(Application const&) = delete;
 
@@ -75,7 +76,7 @@ private:
 
     void resetStatistics();
 
-    std::shared_ptr<dbm::session> makeDbSession() const;
+    std::shared_ptr<dbm::mysql_session> makeDbSession() const;
 
     std::unique_ptr<Daq> daq_production_;
     std::unique_ptr<Daq> daq_energy_;

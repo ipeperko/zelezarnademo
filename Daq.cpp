@@ -42,7 +42,7 @@ auto get_values_from_map(MapType const& map)
     return vec;
 }
 
-void query_helper(dbm::prepared_stmt& stmt, dbm::session& db, OpearationStatistics& stat)
+void query_helper(dbm::prepared_stmt& stmt, dbm::mysql_session& db, OpearationStatistics& stat)
 {
     bool was_null = stmt.native_handle() == nullptr;
     auto handles = get_values_from_map(db.prepared_statement_handles());

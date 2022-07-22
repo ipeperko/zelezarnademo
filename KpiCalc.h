@@ -5,7 +5,7 @@
 #include "TimeReference.h"
 
 namespace dbm {
-class session;
+class mysql_session;
 }
 
 class KpiCalc : public Object
@@ -15,13 +15,13 @@ public:
      : Object("KpiCalc")
     {}
 
-    double calculateDaily(TimePoint tp, dbm::session& db);
+    double calculateDaily(TimePoint tp, dbm::mysql_session& db);
 
-    double calculateWeekly(TimePoint tp, dbm::session& db);
+    double calculateWeekly(TimePoint tp, dbm::mysql_session& db);
 
 private:
 
-    double calculate(dbm::session& db, TimePoint from, TimePoint to);
+    double calculate(dbm::mysql_session& db, TimePoint from, TimePoint to);
 };
 
 #endif //ZELEZARNA_KPICALC_H
