@@ -40,7 +40,7 @@ set (SOURCES
     TimeReference.h
     )
 
-find_package(dbm 0.1.11 REQUIRED)
+find_package(dbm 0.2.1 REQUIRED)
 
 find_package (Boost 1.71 REQUIRED COMPONENTS system program_options)
 
